@@ -1,0 +1,33 @@
+---
+
+# Install the cronjob, then run it to test it works
+#
+# ------------------------------------------------------------------------------------------------------------------------------------
+# This collection of playbooks can easily end up an inscrutable labyrinthine tangle, so I'd appreciate a few things to keep it tidy
+#
+# To the maintainers:
+#
+# - Don't 'check the OS' in order to decide what to do.  Ansible makes this far too easy; we end up with a fragile playbook that breaks every time
+#   the base OS changes in any way.  Don't have a list of 'what folders/packages/etc are called' - test it and register a result, so that it works everywhere
+#
+# - Don't require an environment variable when you could just check whether something exists - we don't need a variable to see whether this is a docker build,
+#   for instance
+#
+# - If you do need an environment variable, try and keep it in this file, so that the host owner don't need to go hunting for it.
+#
+# - Keep it 'straight line' - as little branching and logic as is essential, and no more. 
+#
+# Love John
+# ------------------------------------------------------------------------------------------------------------------------------------
+
+- hosts: installationservers
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Install Antivirus / Verify Installation
+      ansible.builtin.include_role:
+        name: antivirus
+
+    - name: Install Cronjob to submit evidence
+      ansible.builtin.include_role:
+        name: cronjob
