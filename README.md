@@ -68,7 +68,7 @@ Specify the intent of the install e.g. dry-run or execute (Appendix 1) `/tmp/ins
 
 Please review Appendix 1 to construct these supporting files for the installation, they can be re-used upon every installation.
 
-Once theis file are available on the indetended install host/machine, run:
+Once these files are available on the intended install host/machine, run:
 ```
 curl https://raw.githubusercontent.com/systeminit/si-device-compliance/feat/add-linux-device-compliance/orchestrate-install.sh > /tmp/orchestrate-install.sh
 chmod a+x /tmp/orchestrate-install.sh
