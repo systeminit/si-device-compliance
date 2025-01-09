@@ -1,0 +1,140 @@
+---
+- name: Ensure compliance directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  with_items:
+    - "{{ COMPLIANCE_DIR }}"
+    - "{{ LOGS_DIR }}"
+    - "{{ RESULTS_DIR }}"
+  
+- name: Create compliance data collection script
+  copy:
+    dest: "{{ CRON_SCRIPT_PATH }}"
+    owner: root
+    group: root
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      OUTPUT_FILE="{{ RESULTS_DIR }}/${TIMESTAMP}.json"
+      SCRIPT_COMMIT="some-version-here"
+      SCRIPT_USER="{{ EMAIL_ADDRESS }}"
+      SUBMISSION_TOKEN="${1:-unset}"
+
+      # Collect hostname
+      HOSTNAME="$(hostname)"
+
+      # Looking output like: AMD Ryzen Threadripper PRO 5975WX 32-Cores, x86_64, 64
+      LSCPU="$(lscpu --json | jq -r '[
+        (.lscpu[] | select(.field == "Model name:") | .data),
+        (.lscpu[] | select(.field == "Architecture:") | .data),
+        (.lscpu[] | select(.field == "CPU(s):") | .data)
+      ] | join(", ")')"
+
+      # Looking output like: 230318033800674 - Pro WS WRX80E-SAGE SE WIFI
+      LSHW="$(lshw -json | jq -r '
+        .children[] 
+        | select(.description == "Motherboard") 
+        | "\(.serial) - \(.product)"
+      ')"
+
+      SERIAL_NUMBER="$(lshw -json | jq -r '
+        .children[] 
+        | select(.description == "Motherboard") 
+        | "\(.serial)"
+      ')"
+
+      # Looking output like: 1783e116-bf08-36b8-b28e-08bfb836b28d
+      HARDWARE_UUID="$(dmidecode --type system | grep UUID | awk -F: '{ print $2 }')"
+      
+      # Looking output like: 
+      DISKS="$(lsblk -J | jq '{
+        drives: [
+          .blockdevices[]
+          | recurse(.children[]?)
+          | select(.type == "crypt")
+          | {
+              name: (.name | ascii_upcase + ":"),
+              encrypted: (.type == "crypt"),
+              isBootVolume: (.children? // [] | any(.mountpoints? | contains(["/"]))),
+              filevaultEnabled: (.type == "crypt")
+            }
+        ]
+      }')"
+
+      OS_NAME=$(grep '^NAME=' /etc/os-release | cut -d= -f2 | tr -d '"')
+      OS_VERSION=$(grep '^VERSION_ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
+
+      # Check screenlock policies
+      REQUIRES_PASSWORD=$(gsettings get org.gnome.desktop.screensaver lock-enabled || echo "false")
+      TIMEOUT=$(gsettings get org.gnome.desktop.session idle-delay | awk '{ print $2 "000"}' || echo "UTD")
+
+      # Check password policy
+      PASSWORD_MIN_LEN=$(grep ^minlen /etc/security/pwquality.conf | awk -F= '{ print $2 }' | tr -d ' ')
+
+      # Antivirus check
+      ANTIVIRUS_ACTIVE=$(ps aux | grep '[c]lamd' > /dev/null && echo "true" || echo "false")
+
+      # Assemble JSON with the simple keys first
+      cat <<EOF > $OUTPUT_FILE
+        {
+          "displayName": "$HOSTNAME",
+          "uniqueId": "$LSHW",
+          "externalUrl": "N/A",
+          "collectedTimestamp": "$TIMESTAMP",
+          "osName": "$OS_NAME",
+          "osVersion": "$OS_VERSION",
+          "hardwareUuid": "$HARDWARE_UUID",
+          "serialNumber": "$SERIAL_NUMBER",
+          "applications": [],
+          "users": [],
+          "browserExtensions": [],
+          "systemScreenlockPolicies": [
+            {
+              "requiresPassword": $REQUIRES_PASSWORD,
+              "screenSleepTimeoutMs": $TIMEOUT
+            }
+          ],
+          "isManaged": false,
+          "autoUpdatesEnabled": false,
+          "owner": "$SCRIPT_USER",
+          "passwordPolicy": {
+              "minimumLengthRequirement": $PASSWORD_MIN_LEN
+          },
+          "isXProtectEnabled": $ANTIVIRUS_ACTIVE,
+          "customProperties": {
+              "lscpu": "$LSCPU",
+              "lshw": "$LSHW",
+              "antivirusActive": "$ANTIVIRUS_ACTIVE",
+              "usingPasswordManager": "$USING_PASSWORD_MANAGER",
+              "scriptVersion": "$SCRIPT_COMMIT"
+          }
+        }
+      EOF
+
+      #Insert the more difficult objects separately
+      jq --argjson disks "$DISKS" '.drives = $disks.drives' $OUTPUT_FILE | sudo tee $OUTPUT_FILE > /dev/null
+
+      #Insert the resources objec
+      RESOURCES=$(cat $OUTPUT_FILE | jq -c)
+
+      # Submit the data to the compliance-submission API for injection into Vanta
+      curl --location --request POST 'https://device-compliance.systeminit.com' \
+        --header 'accept: application/json' \
+        --header 'content-type: application/json' \
+        --header "Authorization: Bearer $SUBMISSION_TOKEN" \
+        --data-raw "$RESOURCES"
+
+- name: Set up cron job for compliance data collection
+  copy:
+    dest: /etc/cron.daily/collect_compliance_data
+    owner: root
+    group: root
+    mode: '0755'
+    content: |
+      #!/bin/bash
+      {{ CRON_SCRIPT_PATH }} {{ SUBMISSION_TOKEN }} >> {{ LOGS_DIR }}/run.log

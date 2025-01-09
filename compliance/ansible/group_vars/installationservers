@@ -1,0 +1,8 @@
+---
+# si-device-compliance Installation & Configuration Example .vars file
+# --------------------------------------------------------------------
+# This file is to be used a a guide on how to use the ansible playbook in
+# which it sits. It outlines the end to end configuration which will
+# provision the compliance tool against the host
+# --------------------------------------------------------------------
+

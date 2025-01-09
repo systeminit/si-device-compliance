@@ -1,0 +1,43 @@
+---
+
+- name: Update package repository cache
+  apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Install ClamAV and related services
+  # Could probably variablise as to where to install
+  package:
+    name:
+      - clamav
+      - clamav-daemon
+    state: present
+
+- name: Enable ClamAV service at startup
+  systemd:
+    name: clamav-daemon
+    enabled: yes
+    state: started
+
+- name: Stop ClamAV service temporarily to update db
+  systemd:
+    name: clamav-daemon
+    state: stopped
+
+- name: Update ClamAV virus database
+  command: freshclam
+  register: freshclam_output
+  changed_when: "'bytecode.cvd is up to date' not in freshclam_output.stdout"
+
+- name: Add Known False Positives
+  ansible.builtin.copy:
+    src: templates/false-positives.sfp
+    dest: /var/lib/clamav/false-positives.sfp # Could probably variablise
+    owner: root
+    group: root
+    mode: 0555
+
+- name: Start ClamAV service if not running
+  systemd:
+    name: clamav-daemon
+    state: started
