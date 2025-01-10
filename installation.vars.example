@@ -10,7 +10,7 @@ CONFIGURATION_MANAGEMENT_BRANCH: main
 COMPLIANCE_DIR: /etc/si-device-compliance
 RESULTS_DIR: /etc/si-device-compliance/results
 LOGS_DIR: /etc/si-device-compliance/logs
-CRON_SCRIPT_PATH: /etc/si-device-compliance/collect_compliance_data.sh
+SERVICE_SCRIPT_PATH: /etc/si-device-compliance/collect_compliance_data.sh
 
 # -----------------------------------------
 # Compliance Tracking Variables
