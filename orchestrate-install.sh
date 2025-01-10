@@ -67,6 +67,12 @@ check_params_set(){
 		echo "Error: A variables file needs to be passed to this installation wrapper for it to succeed. Please invoke with ./orchestrate-install.sh <filepath>" 
 		exit 1
 	fi
+
+    if [[ ! -s "$VARIABLES_FILE" ]]; then
+		echo "Error: The specified file '$VARIABLES_FILE' does not exist or is not a regular file."
+		exit 1
+	fi
+
 	echo "---------------------------------"
 	echo "Values passed as inputs:"
 	echo "VARIABLES_FILE=$VARIABLES_FILE"
@@ -99,6 +105,14 @@ check_pre_reqs() {
         echo "Error: jq is not installed. Please install jq and try again."
         exit 1
     fi
+    if ! command -v lshw &>/dev/null; then
+        echo "Error: lshw is not installed. Please install lshw and try again."
+        exit 1
+    fi
+    if ! command -v lscpu &>/dev/null; then
+        echo "Error: lscpu is not installed. Please install lscpu and try again."
+        exit 1
+    fi
 	if [[ $CONFIGURATION_MANAGEMENT_TOOL == "ansible" ]]; then
 		if ! command -v ansible-playbook &>/dev/null; then
 			echo "Error: ansible-playbook is not installed. Please install Ansible and try again."
@@ -127,7 +141,7 @@ execute_configuration_management() {
 		ansible_playbook_location=$(whereis ansible-playbook | awk '{print $2}')
 		echo "Info: Running config management against $($ansible_location --version | head -n 1)"
 		$ansible_playbook_location -i ./compliance/ansible/hosts.yaml --connection=local ./compliance/ansible/main.yaml --extra-vars "@$VARIABLES_FILE" --extra-vars "SCRIPT_VERSION=$SCRIPT_VERSION"
-		echo "Info: System Configuration should be correctly configured, please see logs in $LOGS_DIR/runs.log to verify"
+		echo "Info: System Configuration should be correctly configured, please see logs in $LOGS_DIR/run.log to verify"
 		#TODO(johnrwat): add much more detail here as to what happens next
 	else
 		echo "Error: Unsupported or unknown configuration management tool specified, exiting."

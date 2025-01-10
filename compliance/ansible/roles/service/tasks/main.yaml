@@ -13,12 +13,15 @@
   
 - name: Create compliance data collection script
   copy:
-    dest: "{{ CRON_SCRIPT_PATH }}"
+    dest: "{{ SERVICE_SCRIPT_PATH }}"
     owner: root
     group: root
     mode: '0755'
     content: |
       #!/bin/bash
+
+      set -eo pipefail 
+      
       TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
       OUTPUT_FILE="{{ RESULTS_DIR }}/${TIMESTAMP}.json"
       USING_PASSWORD_MANAGER="{{ USING_PASSWORD_MANAGER }}"
@@ -78,21 +81,21 @@
       echo "[ must be ]"
       echo '{"name": "{{ ROOT_DISK_ENCRYPTED_PARTITION_BLK }}","encrypted": true,"isBootVolume": true,"filevaultEnabled": true}' | jq
 
-      OS_NAME=$(grep '^NAME=' /etc/os-release | cut -d= -f2 | tr -d '"')
+      OS_NAME=$(grep '^NAME=' /etc/os-release | cut -d= -f2 | tr -d '"' || echo "UTD")
       echo "OS_NAME found to be $OS_NAME"
 
-      OS_VERSION=$(grep '^VERSION_ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
+      OS_VERSION=$( (grep '^VERSION_ID=' /etc/os-release | cut -d= -f2 | tr -d '"' ) || echo "UTD")
       echo "OS_VERSION found to be $OS_VERSION"
 
       # Check screenlock policies
-      REQUIRES_PASSWORD=$(gsettings get org.gnome.desktop.screensaver lock-enabled || echo "false")
+      REQUIRES_PASSWORD=$( (gsettings get org.gnome.desktop.screensaver lock-enabled ) || echo "false")
       echo "REQUIRES_PASSWORD found to be $REQUIRES_PASSWORD [ must be true ]"
 
-      TIMEOUT=$(gsettings get org.gnome.desktop.session idle-delay | awk '{ print $2 "000"}' || echo "UTD")
+      TIMEOUT=$( (gsettings get org.gnome.desktop.session idle-delay | awk '{ print $2 "000"}') || echo "0")
       echo "TIMEOUT found to be $TIMEOUT [ must be > 1800 ]"
 
       # Check password policy
-      PASSWORD_MIN_LEN=$(grep ^minlen /etc/security/pwquality.conf | awk -F= '{ print $2 }' | tr -d ' ' || echo "0")
+      PASSWORD_MIN_LEN=$( (grep ^minlen /etc/security/pwquality.conf | awk -F= '{ print $2 }' | tr -d ' ') || echo "0")
       echo "PASSWORD_MIN_LEN found to be $PASSWORD_MIN_LEN [ must be > 12 ]"
 
       # Antivirus check
@@ -157,12 +160,47 @@
         --header "Authorization: Bearer $SUBMISSION_TOKEN" \
         --data-raw "$RESOURCES"
 
-- name: Set up cron job for compliance data collection
-  copy:
-    dest: /etc/cron.daily/collect_compliance_data
-    owner: root
-    group: root
-    mode: '0755'
-    content: |
-      #!/bin/bash
-      {{ CRON_SCRIPT_PATH }} {{ SUBMISSION_TOKEN }} >> {{ LOGS_DIR }}/run.log
+- name: Set up systemd timer for compliance data collection
+  block:
+    - name: Create systemd service file for compliance data collection
+      copy:
+        dest: /etc/systemd/system/collect_compliance_data.service
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Collect Compliance Data
+
+          [Service]
+          Type=oneshot
+          ExecStart={{ SERVICE_SCRIPT_PATH }} {{ SUBMISSION_TOKEN }}
+          StandardOutput=append:{{ LOGS_DIR }}/run.log
+          StandardError=append:{{ LOGS_DIR }}/run.log
+          User=root
+
+    - name: Create systemd timer file for compliance data collection
+      copy:
+        owner: root
+        group: root
+        mode: '0644'
+        dest: /etc/systemd/system/collect_compliance_data.timer
+        content: |
+          [Unit]
+          Description=Timer to run compliance data collection 10 minutes after boot
+
+          [Timer]
+          OnBootSec=10min
+          Unit=collect_compliance_data.service
+
+          [Install]
+          WantedBy=timers.target
+
+    - name: Reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: Enable and start compliance data collection timer
+      systemd:
+        name: collect_compliance_data.timer
+        enabled: true
+        state: started
