@@ -1,12 +1,12 @@
 # System Initiative Device Compliance
 ## Onboarding New Machine Quick Guide:
 
-Ensure your system has `git`, `jq` and `ansible-playbook` packages available to your user.
+Ensure your system has `git`, `jq`. `lscpu`, `lshw` and `ansible-playbook` packages available to your user.
 
 Pull the Orchestration File & example vars file
 ```
-curl https://raw.githubusercontent.com/systeminit/si-device-compliance/feat/add-linux-device-compliance/orchestrate-install.sh > /tmp/orchestrate-install.sh
-curl https://raw.githubusercontent.com/systeminit/si-device-compliance/feat/add-linux-device-compliance/installation.vars > /tmp/installation.vars
+curl https://raw.githubusercontent.com/systeminit/si-device-compliance/main/orchestrate-install.sh > /tmp/orchestrate-install.sh
+curl https://raw.githubusercontent.com/systeminit/si-device-compliance/main/installation.vars > /tmp/installation.vars
 ```
 
 Make the script executable
@@ -31,6 +31,11 @@ Run the installation:
 /bin/bash /tmp/orchestrate-install.sh /tmp/installation.vars
 ```
 
+You can check it is submitting correctly with:
+```
+sudo /etc/si-device-compliance/collect_compliance_data.sh <your token>
+```
+
 ## System Initiative Device Compliance Background
 
 Devices that fall out of the functionality of other compliance tooling can leverage this repository tooling to submit compliance information from any device. Currently only Linux devices are supported, but we could develop it out into an agent that supports other architectures/devices if we wished.
@@ -47,7 +52,7 @@ The system configuration is written in such a way that the following (or any oth
 * Gentoo (untested)
 * Manjaro (untested)
 
-Any questions with any of this, please reach out to [mailto:technical-operations@systeminit.com](technical-operations@systeminit.com) or reach out in Slack to john@systeminit.com.
+Any questions with any of this, please reach out to [technical-operations@systeminit.com](mailto:technical-operations@systeminit.com) or reach out in Slack to john@systeminit.com.
 
 <br/>
 
@@ -75,7 +80,7 @@ The workflow is as follows:
 - Verify that within installation.vars that the relevant configuration properties are set
 - Pull the remainder of the system configuration from the specified git repository in the installation.vars
 - Execute the system configuration on the host from a new folder in `/tmp/si-device-compliance/<RANDOM NUMBER>` to facilitate the install
-- The system configuration sets up a cron in /etc/cron.daily, clamav and an application folder within /etc/si-device-compliance/ which will:
+- The system configuration sets up a service file and timer, clamav and an application folder within /etc/si-device-compliance/ which will:
   - Query the system for various properties, including properties:
     - Hardware indetifiers/signatures such as:
         - lscpu 
@@ -141,11 +146,11 @@ To generate a submission token for your machine/user, navigate to the Technical 
 https://app.systeminit.com/w/01J7PP420PHW97TJJB5BA0SQ9A/head/c/01JH8A98RT2XF5XXYGQAD7EYG8/v/?s=c_01JH8AA327VZMMKM866FEPGGVR&t=attributes
 
 Create a new changeset and add a new SSM parameter with the following content:
-*SI Name:* <firstname> <lastname> - Vanta Submission Token e.g. John Watson - Vanta Submission Token
-*Description:* Hardware submission token for si-device-compliance
-*ParameterName:* SUBMISSION_TOKEN_FIRSTNAME_LASTNAME
-*ParameterType:* String
-*ParameterValue:* A unique, locally generated 20 character alphanumeric password from `pwgen 20` or similar
+* *SI Name:* <firstname> <lastname> - Vanta Submission Token e.g. John Watson - Vanta Submission Token
+* *Description:* Hardware submission token for si-device-compliance
+* *ParameterName:* SUBMISSION_TOKEN_FIRSTNAME_LASTNAME e.g. SUBMISSION_TOKEN_JACOB_HELWIG
+* *ParameterType:* String
+* *ParameterValue:* A unique, locally generated 20 character alphanumeric password from `pwgen 20` or similar
 
 And request apply. Once applied it will then automatically be accepted by the compliance platform when attempting to submit data for your device.
 

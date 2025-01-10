@@ -1,6 +1,6 @@
 ---
 
-# Install the cronjob, then run it to test it works
+# Install the service and timer, then run it to test it works
 #
 # ------------------------------------------------------------------------------------------------------------------------------------
 # This collection of playbooks can easily end up an inscrutable labyrinthine tangle, so I'd appreciate a few things to keep it tidy
@@ -28,6 +28,6 @@
       ansible.builtin.include_role:
         name: antivirus
 
-    - name: Install Cronjob to submit evidence
+    - name: Install Service and Timer to submit evidence
       ansible.builtin.include_role:
-        name: cronjob
+        name: service

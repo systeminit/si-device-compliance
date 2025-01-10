@@ -27,7 +27,6 @@ SUBMISSION_TOKEN: [submission_token]
 # stature + we can resolve later on when it's convenient for you.
 ROOT_DISK_ENCRYPTED_PARTITION_BLK: [disk-id]
 
-
 # Confirmation that you are using a password manager, generic encryption method
 # or are only using the corporate 1Password in all scenarios where a sensitive 
 # value needs to be passed across the organisation. If this doesn't apply to this
