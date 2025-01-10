@@ -35,6 +35,7 @@ set_variables() {
     export CONFIGURATION_MANAGEMENT_TOOL="$( get_or_default CONFIGURATION_MANAGEMENT_TOOL ansible )"
 	export COMPLIANCE_DIR="$( get_or_default COMPLIANCE_DIR /etc/si-device-compliance )"
 	export LOGS_DIR="$( get_or_default LOGS_DIR /etc/si-device-compliance/logs )"
+	export SCRIPT_VERSION="$( get_or_default SCRIPT_VERSION $(git rev-parse --short HEAD) )"
 }
 
 check_free_disk_space(){
@@ -95,6 +96,10 @@ check_pre_reqs() {
         echo "Error: git is not installed. Please install git and try again."
         exit 1
     fi
+    if ! command -v jq &>/dev/null; then
+        echo "Error: jq is not installed. Please install jq and try again."
+        exit 1
+    fi
 	if [[ $CONFIGURATION_MANAGEMENT_TOOL == "ansible" ]]; then
 		if ! command -v ansible-playbook &>/dev/null; then
 			echo "Error: ansible-playbook is not installed. Please install Ansible and try again."
@@ -121,8 +126,9 @@ execute_configuration_management() {
 		ansible_location=$(whereis ansible | awk '{print $2}')
 		ansible_playbook_location=$(whereis ansible-playbook | awk '{print $2}')
 		echo "Info: Running config management against $($ansible_location --version | head -n 1)"
-		$ansible_playbook_location -i ./compliance/ansible/hosts.yaml --connection=local ./compliance/ansible/main.yaml --extra-vars @$VARIABLES_FILE
+		$ansible_playbook_location -i ./compliance/ansible/hosts.yaml --connection=local ./compliance/ansible/main.yaml --extra-vars "@$VARIABLES_FILE SCRIPT_VERSION=$SCRIPT_VERSION"
 		echo "Info: System Configuration should be correctly configured, please see logs in $LOGS_DIR/runs.log to verify"
+		#TODO(johnrwat): add much more detail here as to what happens next
 	else
 		echo "Error: Unsupported or unknown configuration management tool specified, exiting."
 		exit 1

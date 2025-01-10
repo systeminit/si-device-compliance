@@ -24,6 +24,15 @@
     name: clamav-daemon
     state: stopped
 
+- name: Stop ClamAV service temporarily to update db
+  systemd:
+    name: clamav
+    state: stopped
+
+- name: Pause for 5 seconds to let app stop locking the filesystem
+  ansible.builtin.pause:
+    seconds: 5
+
 - name: Update ClamAV virus database
   command: freshclam
   register: freshclam_output
@@ -32,7 +41,7 @@
 - name: Add Known False Positives
   ansible.builtin.copy:
     src: templates/false-positives.sfp
-    dest: /var/lib/clamav/false-positives.sfp # Could probably variablise
+    dest: /var/lib/clamav/false-positives.sfp # Could probably variablise but it'll do for now
     owner: root
     group: root
     mode: 0555
@@ -40,4 +49,9 @@
 - name: Start ClamAV service if not running
   systemd:
     name: clamav-daemon
+    state: started
+
+- name: Start ClamAV service if not running
+  systemd:
+    name: clamav
     state: started
