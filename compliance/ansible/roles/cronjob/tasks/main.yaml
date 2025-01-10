@@ -21,8 +21,8 @@
       #!/bin/bash
       TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
       OUTPUT_FILE="{{ RESULTS_DIR }}/${TIMESTAMP}.json"
-      USING_PASSWORD_MANAGER= "{{ USING_PASSWORD_MANAGER }}"
-      SCRIPT_VERSION= "{{ SCRIPT_VERSION }}"
+      USING_PASSWORD_MANAGER="{{ USING_PASSWORD_MANAGER }}"
+      SCRIPT_VERSION="{{ SCRIPT_VERSION }}"
       SCRIPT_USER="{{ EMAIL_ADDRESS }}"
       SUBMISSION_TOKEN="${1:-unset}"
 
@@ -75,13 +75,8 @@
       }')"
       echo "DISKS found to be:"
       echo $DISKS | jq
-      echo "[must be]"
-      echo '{
-          "name": "{{ ROOT_DISK_ENCRYPTED_PARTITION_BLK }}",
-          "encrypted": true,
-          "isBootVolume": true,
-          "filevaultEnabled": true
-        }'
+      echo "[ must be ]"
+      echo '{"name": "{{ ROOT_DISK_ENCRYPTED_PARTITION_BLK }}","encrypted": true,"isBootVolume": true,"filevaultEnabled": true}' | jq
 
       OS_NAME=$(grep '^NAME=' /etc/os-release | cut -d= -f2 | tr -d '"')
       echo "OS_NAME found to be $OS_NAME"
@@ -91,18 +86,18 @@
 
       # Check screenlock policies
       REQUIRES_PASSWORD=$(gsettings get org.gnome.desktop.screensaver lock-enabled || echo "false")
-      echo "REQUIRES_PASSWORD found to be $REQUIRES_PASSWORD [must be true]"
+      echo "REQUIRES_PASSWORD found to be $REQUIRES_PASSWORD [ must be true ]"
 
       TIMEOUT=$(gsettings get org.gnome.desktop.session idle-delay | awk '{ print $2 "000"}' || echo "UTD")
-      echo "TIMEOUT found to be $TIMEOUT [must be < 30 minutes]"
+      echo "TIMEOUT found to be $TIMEOUT [ must be > 1800 ]"
 
       # Check password policy
-      PASSWORD_MIN_LEN=$(grep ^minlen /etc/security/pwquality.conf | awk -F= '{ print $2 }' | tr -d ' ')
-      echo "PASSWORD_MIN_LEN found to be $PASSWORD_MIN_LEN [must be >12]"
+      PASSWORD_MIN_LEN=$(grep ^minlen /etc/security/pwquality.conf | awk -F= '{ print $2 }' | tr -d ' ' || echo "0")
+      echo "PASSWORD_MIN_LEN found to be $PASSWORD_MIN_LEN [ must be > 12 ]"
 
       # Antivirus check
       ANTIVIRUS_ACTIVE=$(ps aux | grep '[c]lamd' > /dev/null && echo "true" || echo "false")
-      echo "ANTIVIRUS_ACTIVE found to be $ANTIVIRUS_ACTIVE [must be true]"
+      echo "ANTIVIRUS_ACTIVE found to be $ANTIVIRUS_ACTIVE [ must be true ]"
 
       # Assemble JSON with the simple keys first
       cat <<EOF > $OUTPUT_FILE
@@ -136,18 +131,18 @@
               "lshw": "$LSHW",
               "antivirusActive": "$ANTIVIRUS_ACTIVE",
               "usingPasswordManager": "{{ USING_PASSWORD_MANAGER }}",
-              "scriptVersion": " {{ SCRIPT_VERSION }}"
+              "scriptVersion": "{{ SCRIPT_VERSION }}"
           }
         }
       EOF
 
       # Inject the more difficult object(s) separately
-      cp "${OUTPUT_FILE}" "${OUTPUT_FILE}.tmp"
-      jq --argjson disks "$DISKS" '.drives = $disks.drives' ${OUTPUT_FILE}.tmp >> "${OUTPUT_FILE}"
+      mv "${OUTPUT_FILE}" "${OUTPUT_FILE}.tmp"
+      jq --argjson disks "$DISKS" '.drives = $disks.drives' ${OUTPUT_FILE}.tmp > "${OUTPUT_FILE}"
       rm "${OUTPUT_FILE}.tmp"
 
       # Get the resources object for posting
-      RESOURCES=$(cat ${OUTPUT_FILE}-with-drives.json | jq -c)
+      RESOURCES=$(cat ${OUTPUT_FILE} | jq -c)
 
       echo "----------------------------------------------------"
       echo "Submission data found to be:"

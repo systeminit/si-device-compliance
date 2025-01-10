@@ -33,9 +33,8 @@ set_variables() {
     export CONFIGURATION_MANAGEMENT_BRANCH="$( get_or_default CONFIGURATION_MANAGEMENT_BRANCH main )"
     export CONFIGURATION_MANAGEMENT_REPO="$( get_or_default CONFIGURATION_MANAGEMENT_REPO https://github.com/systeminit/si-device-compliance.git )"
     export CONFIGURATION_MANAGEMENT_TOOL="$( get_or_default CONFIGURATION_MANAGEMENT_TOOL ansible )"
-	export COMPLIANCE_DIR="$( get_or_default COMPLIANCE_DIR /etc/si-device-compliance )"
-	export LOGS_DIR="$( get_or_default LOGS_DIR /etc/si-device-compliance/logs )"
-	export SCRIPT_VERSION="$( get_or_default SCRIPT_VERSION $(git rev-parse --short HEAD) )"
+    export COMPLIANCE_DIR="$( get_or_default COMPLIANCE_DIR /etc/si-device-compliance )"
+    export LOGS_DIR="$( get_or_default LOGS_DIR /etc/si-device-compliance/logs )"
 }
 
 check_free_disk_space(){
@@ -119,6 +118,7 @@ pull_configuration_management() {
 	cd si-device-compliance
 	echo "Checking out branch: $CONFIGURATION_MANAGEMENT_BRANCH"
 	git checkout $CONFIGURATION_MANAGEMENT_BRANCH
+	export SCRIPT_VERSION="$( get_or_default SCRIPT_VERSION $(git rev-parse --short HEAD) )"
 }
 
 execute_configuration_management() {
@@ -126,7 +126,7 @@ execute_configuration_management() {
 		ansible_location=$(whereis ansible | awk '{print $2}')
 		ansible_playbook_location=$(whereis ansible-playbook | awk '{print $2}')
 		echo "Info: Running config management against $($ansible_location --version | head -n 1)"
-		$ansible_playbook_location -i ./compliance/ansible/hosts.yaml --connection=local ./compliance/ansible/main.yaml --extra-vars "@$VARIABLES_FILE SCRIPT_VERSION=$SCRIPT_VERSION"
+		$ansible_playbook_location -i ./compliance/ansible/hosts.yaml --connection=local ./compliance/ansible/main.yaml --extra-vars "@$VARIABLES_FILE" --extra-vars "SCRIPT_VERSION=$SCRIPT_VERSION"
 		echo "Info: System Configuration should be correctly configured, please see logs in $LOGS_DIR/runs.log to verify"
 		#TODO(johnrwat): add much more detail here as to what happens next
 	else
