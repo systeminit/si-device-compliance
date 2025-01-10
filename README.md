@@ -27,7 +27,9 @@ USING_PASSWORD_MANAGER: [true/false]          # Whether you are using a password
 ```
 
 Run the installation:
-
+```
+/bin/bash /tmp/orchestrate-install.sh /tmp/installation.vars
+```
 
 ## System Initiative Device Compliance Background
 

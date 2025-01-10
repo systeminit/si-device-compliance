@@ -24,11 +24,6 @@
     name: clamav-daemon
     state: stopped
 
-- name: Stop ClamAV service temporarily to update db
-  systemd:
-    name: clamav
-    state: stopped
-
 - name: Pause for 5 seconds to let app stop locking the filesystem
   ansible.builtin.pause:
     seconds: 5
@@ -49,9 +44,4 @@
 - name: Start ClamAV service if not running
   systemd:
     name: clamav-daemon
-    state: started
-
-- name: Start ClamAV service if not running
-  systemd:
-    name: clamav
     state: started
