@@ -6,7 +6,7 @@ Ensure your system has `git`, `jq`. `lscpu`, `lshw` and `ansible-playbook` packa
 Pull the Orchestration File & example vars file
 ```
 curl https://raw.githubusercontent.com/systeminit/si-device-compliance/main/orchestrate-install.sh > /tmp/orchestrate-install.sh
-curl https://raw.githubusercontent.com/systeminit/si-device-compliance/main/installation.vars > /tmp/installation.vars
+curl https://raw.githubusercontent.com/systeminit/si-device-compliance/main/installation.vars.example > /tmp/installation.vars
 ```
 
 Make the script executable
