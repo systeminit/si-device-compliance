@@ -4,11 +4,11 @@ import botocore.vendored.requests as requests
 import json
 
 # Environment variables
-DB_HOST = os.getenv('DB_HOST', 'example-db.c9m4osgyqdow.us-east-1.rds.amazonaws.com')
+DB_HOST = os.getenv('DB_HOST', 'postgres')
 DB_PORT = int(os.getenv('DB_PORT', '5432'))
-DB_NAME = os.getenv('DB_NAME', 'rdsexampledb')
+DB_NAME = os.getenv('DB_NAME', 'postgres')
 DB_USER = os.getenv('DB_USER', 'postgres')
-DB_PASSWORD = os.getenv('DB_PASSWORD', '2ZhcFBF09gKOaA7zHkTq')
+DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')
 VANTA_API_URL = "https://api.vanta.com/v1/resources/macos_user_computer"
 VANTA_SUBMISSION_TOKEN = os.getenv("VANTA_SUBMISSION_TOKEN")
 
