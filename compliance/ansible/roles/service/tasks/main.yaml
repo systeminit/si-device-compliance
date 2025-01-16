@@ -196,6 +196,24 @@
           [Install]
           WantedBy=timers.target
 
+    # Add a second timer just incase the machine is a 24/7 runner
+    - name: Create systemd timer file for compliance data collection (monthly)
+      copy:
+        owner: root
+        group: root
+        mode: '0644'
+        dest: /etc/systemd/system/collect_compliance_data_monthly.timer
+        content: |
+          [Unit]
+          Description=Timer to run compliance data collection monthly
+
+          [Timer]
+          OnCalendar=monthly
+          Unit=collect_compliance_data.service
+
+          [Install]
+          WantedBy=timers.target
+
     - name: Reload systemd daemon
       command: systemctl daemon-reload
 
