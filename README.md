@@ -4,36 +4,41 @@
 Ensure your system has `git`, `jq`. `lscpu`, `lshw` and `ansible-playbook` packages available to your user.
 
 Pull the Orchestration File & example vars file
-```
+```bash
 curl https://raw.githubusercontent.com/systeminit/si-device-compliance/main/orchestrate-install.sh > /tmp/orchestrate-install.sh
 curl https://raw.githubusercontent.com/systeminit/si-device-compliance/main/installation.vars.example > /tmp/installation.vars
 ```
 
 Make the script executable
-```
+```bash
 chmod a+x /tmp/orchestrate-install.sh 
 ```
 
 Adjust the variables file for your user/machine values
-```
+```bash
+# Use your editor of choice
 vim /tmp/installation.vars
 ```
+
 Modify these fields to their correct value:
-```
+```bash
 EMAIL_ADDRESS: [email_id]                     # Your corporate systeminit.com email id
-SUBMISSION_TOKEN: [submission_token]          # Your submission token # Appendix 2 - Generating a Submission Token
+SUBMISSION_TOKEN: [submission_token]          # Your submission token (or path to a single-line file containing it) # Appendix 2 - Generating a Submission Token
 ROOT_DISK_ENCRYPTED_PARTITION_BLK: [disk-id]  # Your encrypted OS root disk blk
 USING_PASSWORD_MANAGER: [true/false]          # Whether you are using a password manager
 ```
 
 Run the installation:
-```
+```bash
 /bin/bash /tmp/orchestrate-install.sh /tmp/installation.vars
+
+# You may need to use bash from your PATH
+bash /tmp/orchestrate-install.sh /tmp/installation.vars
 ```
 
 You can check it is submitting correctly with:
-```
-sudo /etc/si-device-compliance/collect_compliance_data.sh <your token>
+```bash
+sudo /etc/si-device-compliance/collect_compliance_data.sh <YOUR-TOKEN-OR-PATH>
 ```
 
 ## System Initiative Device Compliance Background
