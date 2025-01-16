@@ -1,35 +1,74 @@
 ---
 
-- name: Update package repository cache
-  apt:
-    update_cache: yes
+- name: Set up Debian
   when: ansible_facts['os_family'] == "Debian"
+  block:
 
-- name: Install ClamAV and related services
-  package:
-    name:
-      - clamav
-    state: present
-  when: ansible_distribution == "Archlinux"
+    - name: Update package repository cache
+      apt:
+        update_cache: yes
 
-- name: Install ClamAV and related services
-  package:
-    name:
-      - clamav
-      - clamav-daemon
-    state: present
-  when: ansible_facts['os_family'] == "Debian"
+    - name: Install ClamAV and related services
+      package:
+        name:
+          - clamav
+          - clamav-daemon
+        state: present
 
-- name: Enable ClamAV service at startup
-  systemd:
-    name: clamav-daemon
-    enabled: yes
-    state: started
+    - name: Enable ClamAV service at startup
+      systemd:
+        name: clamav-daemon
+        enabled: yes
+        state: started
 
-- name: Stop ClamAV service temporarily to update db
-  systemd:
-    name: clamav-daemon
-    state: stopped
+    - name: Stop ClamAV service temporarily to update db
+      systemd:
+        name: clamav-daemon
+        state: stopped
+
+- name: Set up Archlinux
+  when: ansible_facts['os_family'] == "Archlinux"
+  block:
+
+    - name: Install ClamAV and related services
+      package:
+        name:
+          - clamav
+        state: present
+
+    - name: Enable ClamAV service at startup
+      systemd:
+        name: clamav-daemon
+        enabled: yes
+        state: started
+
+    - name: Stop ClamAV service temporarily to update db
+      systemd:
+        name: clamav-daemon
+        state: stopped
+
+- name: Set up Fedora
+  when: ansible_distribution == "Fedora"
+  block:
+
+    - name: Install ClamAV and related services
+      package:
+        name:
+          - clamav
+          - clamd
+          - clamav-update
+        state: present
+
+    - name: Enable ClamAV service at startup
+      systemd:
+        name: clamav-freshclam
+        enabled: yes
+        state: started
+
+    - name: Stop ClamAV service temporarily to update db
+      systemd:
+        name: clamav-freshclam
+        state: stopped
 
 - name: Pause for 5 seconds to let app stop locking the filesystem
   ansible.builtin.pause:
@@ -48,7 +87,18 @@
     group: root
     mode: 0555
 
-- name: Start ClamAV service if not running
-  systemd:
-    name: clamav-daemon
-    state: started
+- name: Finalise Setup Fedora
+  when: ansible_facts['os_family'] == "Fedora"
+  block:
+  - name: Start ClamAV service if not running
+    systemd:
+      name: clamav-freshclam
+      state: started
+
+- name: Finalise Setup Debian & Archlinux
+  when: ansible_facts['os_family'] == "Debian" or ansible_facts['os_family'] == "Archlinux"
+  block:
+  - name: Start ClamAV service if not running
+    systemd:
+      name: clamav-daemon
+      state: started
