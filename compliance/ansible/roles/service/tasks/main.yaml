@@ -18,7 +18,7 @@
     group: root
     mode: '0755'
     content: |
-      #!/bin/bash
+      #!/usr/bin/env bash
 
       set -eo pipefail 
       
@@ -28,6 +28,11 @@
       SCRIPT_VERSION="{{ SCRIPT_VERSION }}"
       SCRIPT_USER="{{ EMAIL_ADDRESS }}"
       SUBMISSION_TOKEN="${1:-unset}"
+
+      # If the variable corresponds to a file path, read the token from the file provided.
+      if [ -f "$SUBMISSION_TOKEN" ]; then
+        SUBMISSION_TOKEN="$(cat "$SUBMISSION_TOKEN")"
+      fi
 
       echo "----------------------------------------------------"
 
@@ -43,12 +48,16 @@
       ] | join(", ")')"
       echo "LSCPU found to be $LSCPU"
 
-      # Looking output like: 230318033800674 - Pro WS WRX80E-SAGE SE WIFI
-      LSHW="$(lshw -json | jq -r '
+      # Looking output like: 1783e116-bf08-36b8-b28e-08bfb836b28d
+      HARDWARE_UUID="$(dmidecode --type system | grep UUID | awk -F: '{ print $2 }' | tr -d '[:space:]')"
+      echo "HARDWARE_UUID found to be $HARDWARE_UUID"
+
+      # Looking output like: 1783e116-bf08-36b8-b28e-08bfb836b28d - Pro WS WRX80E-SAGE SE WIFI
+      LSHW="$(lshw -json | jq -r "
         .children[] 
-        | select(.description == "Motherboard") 
-        | "\(.serial) - \(.product)"
-      ')"
+        | select(.description == \"Motherboard\") 
+        | \"${HARDWARE_UUID} - \(.product)\"
+      ")"
       echo "LSHW found to be $LSHW"
 
       SERIAL_NUMBER="$(lshw -json | jq -r '
@@ -57,10 +66,6 @@
         | "\(.serial)"
       ')"
       echo "SERIAL_NUMBER found to be $SERIAL_NUMBER"
-
-      # Looking output like: 1783e116-bf08-36b8-b28e-08bfb836b28d
-      HARDWARE_UUID="$(dmidecode --type system | grep UUID | awk -F: '{ print $2 }')"
-      echo "HARDWARE_UUID found to be $HARDWARE_UUID"
 
       # Looking output like: 
       DISKS="$(lsblk -J | jq '{
@@ -161,6 +166,7 @@
         --data-raw "$RESOURCES"
 
 - name: Set up systemd timer for compliance data collection
+  when: INSTALL_SYSTEMD_SERVICE
   block:
     - name: Create systemd service file for compliance data collection
       copy:

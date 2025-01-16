@@ -1,9 +1,14 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # Call this function with: 
 # ./orchestrate-install.sh <filepath to variables>
 
 set -eo pipefail
+
+if [ "$EUID" -eq 0 ]; then
+	echo "error: must not run directly as root"
+	exit 1
+fi
+sudo -v
 
 VARIABLES_FILE="${1:-/tmp/installation.vars}"
 

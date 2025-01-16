@@ -12,9 +12,24 @@ RESULTS_DIR: /etc/si-device-compliance/results
 LOGS_DIR: /etc/si-device-compliance/logs
 SERVICE_SCRIPT_PATH: /etc/si-device-compliance/collect_compliance_data.sh
 
+# If you are running a distribution without a solid means of imperative package installation,
+# (e.g. NixOS), then you can opt-out of installing the AV. However, you are responsible for
+# installing it correctly. To do so, set the value to "false".
+INSTALL_ANTIVIRUS: true
+
+# If you are running a distribution that disallows imperative systemd service installation, # (e.g.
+# NixOS), then you can opt-out of installing service. However, you are responsible for installing
+# it correctly, meaning that the compliance script runs on a monthly cadence. To do so, set the
+# value to "false".
+INSTALL_SYSTEMD_SERVICE: true
+
 # -----------------------------------------
 # Compliance Tracking Variables
 EMAIL_ADDRESS: [email_id]
+
+# This can either be the literal token or a path to a single-line file containing the token. This
+# is particularly helpful if you are checking in configuration files or unit files into source
+# control (e.g NixOS). Example location if using a file: "/etc/si-device-compliance/token.txt".
 SUBMISSION_TOKEN: [submission_token]
 
 # The root disk of your machine must be encrypted, enter the blk reference to

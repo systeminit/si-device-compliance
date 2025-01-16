@@ -27,6 +27,7 @@
     - name: Install Antivirus / Verify Installation
       ansible.builtin.include_role:
         name: antivirus
+      when: INSTALL_ANTIVIRUS
 
     - name: Install Service and Timer to submit evidence
       ansible.builtin.include_role:
