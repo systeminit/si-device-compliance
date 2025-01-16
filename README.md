@@ -59,6 +59,10 @@ The system configuration is written in such a way that the following (or any oth
 
 Any questions with any of this, please reach out to [technical-operations@systeminit.com](mailto:technical-operations@systeminit.com) or reach out in Slack to john@systeminit.com.
 
+### Special Cases
+
+Documented special case instructions and code are location in the [special-cases](special-cases) directory (e.g. NixOS).
+
 <br/>
 
 ## What is in this repository?
